@@ -1,0 +1,47 @@
+#!/bin/bash
+
+show_help () {
+    echo "Usage: 
+    
+    pdf_split -f input_file.pdf -n 1
+
+Arguments:
+
+    -f -- The input pdf file path.
+    -n -- The number of pages to split by.
+    "
+}
+
+# A POSIX variable
+OPTIND=1         # Reset in case getopts has been used previously in the shell.
+
+# Initialize our own variables:
+input_file=""
+n_split=""
+
+while getopts "h?n:f:" opt; do
+    case "$opt" in
+    h|\?)
+        show_help
+        exit 0
+        ;;
+    f)  input_file=$OPTARG
+        ;;
+    n)  n_split=$OPTARG
+        ;;
+    esac
+done
+
+get_pages_in_pdf () {
+    count=$(cat $input_file | strings | sed -n 's|.*/Count -\{0,1\}\([0-9]\{1,\}\).*|\1|p' | sort -rn | head -n 1)
+    echo $count
+}
+
+page_count=$(get_pages_in_pdf)
+i=0
+while [ $i -lt $page_count ]
+do
+    echo $i
+    convert -density 300 $input_file\[$i-$((i-1+n_split))\] -quality 100 ${input_file}-${i}.pdf
+    i=$((i+n_split))
+done
